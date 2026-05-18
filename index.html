@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>주일학교 출석부</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ============================================== */
+        /* 기본 레이아웃 및 디자인 */
+        /* ============================================== */
+        body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        #app-container { width: 100%; max-width: 480px; background-color: #f4f7f6; min-height: 100vh; position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        
+        .header { position: relative; background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%); padding: calc(30px + env(safe-area-inset-top)) 20px 35px; color: white; text-align: center; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; box-shadow: 0 4px 10px rgba(86, 171, 47, 0.2); z-index: 5; }
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .title-area { text-align: left; }
+        .title-area h2 { margin: 0 0 10px 0; font-size: 1.4em; font-weight: 700; letter-spacing: -0.5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+        .dept-title-span { border-bottom: 2px dashed rgba(255,255,255,0.7); padding-bottom: 2px; cursor: pointer; }
+
+        .memo-toggle-btn { font-size: 0.8em; background: rgba(255,255,255,0.9); border: none; color: #2e7d32; font-weight: 700; padding: 6px 12px; border-radius: 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 5px; }
+        .teacher-profile { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .teacher-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white; background-color: rgba(255,255,255,0.3); cursor: pointer; }
+        .teacher-name { font-size: 0.85em; font-weight: 700; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+        .header-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 15px; }
+        .current-date-display { font-size: 1.1em; font-weight: 700; background: rgba(0,0,0,0.25); display: inline-block; padding: 8px 18px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
+        .notice-btn { font-size: 0.95em; font-weight: 700; background: #fff; color: #E65100; border: none; padding: 8px 14px; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+
+        .action-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 5px; }
+        .inquiry-btn, .sms-btn, .print-btn, .backup-btn { background: #fff; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9em; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .inquiry-btn { color: #2e7d32; } .sms-btn { color: #1565C0; } .print-btn { color: #E65100; } .backup-btn { color: #6A1B9A; }
+        
+        .class-info { margin-top: 15px; font-size: 1.05em; font-weight: 500; color: white; line-height: 1.8; }
+        .editable { display: inline-block; min-width: 40px; border-bottom: 1px dashed rgba(255,255,255,0.6); outline: none; font-weight: 700; padding: 0 2px; }
+
+        /* 리스트 영역 */
+        .list-container { padding: 20px; padding-bottom: calc(100px + env(safe-area-inset-bottom)); flex-grow: 1; }
+        .summary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
+        .attendance-summary { font-weight: 700; font-size: 0.9em; }
+        .setting-btn { background: #e8f5e9; border: 1px solid #c8e6c9; padding: 6px 12px; border-radius: 12px; font-size: 0.8em; font-weight: 700; color: #2e7d32; cursor: pointer; }
+        .setting-btn.blue { background: #e3f2fd; border-color: #bbdefb; color: #1976D2; }
+
+        .student-card { background: #fff; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .student-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 140px;}
+        .list-student-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background-color: #eee; }
+        .student-text-info { display: flex; flex-direction: column; gap: 4px; }
+        .student-name { font-weight: 700; color: #1976D2; font-size: 1.1em; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #bbdefb; }
+        
+        .role-tag-container { display: flex; gap: 5px; flex-wrap: wrap; }
+        .student-role-tag { font-size: 0.75em; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;}
+        .jeonsa-tag { background: #e3f2fd; color: #1565c0; }
+
+        .check-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end;}
+        .check-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7em; color: #777; gap: 3px; }
+        .check-item input { width: 22px; height: 22px; accent-color: #56ab2f; margin: 0; cursor: pointer; }
+        .check-item.absent input { accent-color: #c62828; }
+
+        /* 모달 및 팝업 공통 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; width: 88%; max-width: 380px; padding: 22px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 85vh; overflow-y: auto; position: relative; }
+        .modal-title { font-weight: 700; margin-bottom: 15px; text-align: center; font-size: 1.2em; color: #333; }
+        
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 0.85em; color: #666; margin-bottom: 5px; font-weight: 600; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1em; box-sizing: border-box; background-color: white;}
+        
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .btn-primary { background: #56ab2f; color: white; }
+        .btn-secondary { background: #eee; color: #444; }
+        .btn-danger { background: #ffebee; color: #c62828; margin-top: 10px; }
+
+        /* 캘린더 전용 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 10px; }
+        .calendar-cell { height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.9em; cursor: pointer; }
+        .calendar-cell.selected { background: #56ab2f; color: white; font-weight: 700; }
+        .calendar-day-head { font-weight: 700; font-size: 0.8em; color: #999; text-align: center; padding: 5px 0; }
+
+        /* 버튼 및 기타 UI */
+        .list-menu-btn { width: 100%; text-align: left; background: #f8f9fa; border: 1px solid #eee; padding: 14px; border-radius: 12px; margin-bottom: 8px; font-weight: 600; cursor: pointer; display: block; box-sizing: border-box; }
+        .contact-picker-btn { width: 100%; background: #E3F2FD; color: #1976D2; border: 1px solid #BBDEFB; padding: 12px; border-radius: 12px; font-weight: 700; margin-bottom: 15px; cursor: pointer; }
+        .info-box { font-size: 0.75em; color: #666; text-align: center; margin-bottom: 15px; line-height: 1.4; background: #f8f9fa; padding: 10px; border-radius: 10px; border: 1px solid #eee; }
+        
+        .upcoming-item { display: flex; align-items: center; gap: 8px; font-size: 0.95em; color: #333; margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .upcoming-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8em; font-weight:700; flex-shrink: 0; }
+        .upcoming-badge.birth { background: #ffebee; color: #c62828; }
+        .upcoming-badge.event { background: #e3f2fd; color: #1565c0; }
+        
+        .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: linear-gradient(135deg, #ff9a44, #fc6076); color: white; border-radius: 50%; border: none; font-size: 28px; box-shadow: 0 4px 12px rgba(252, 96, 118, 0.3); z-index: 100; cursor: pointer; }
+        
+        @media print { #app-container, .modal, .fab { display: none !important; } #printArea { display: block !important; } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <input type="file" id="teacherProfileInput" style="display:none" accept="image/*" onchange="handleImageUpload(event, 'teacher')">
+    <input type="file" id="studentImageInput" style="display:none" accept="image/*" onchange="handleStudentImageUpload(event)">
+    <input type="file" id="backupFileInput" style="display:none" accept=".json,application/json,text/plain" onchange="handleRestoreData(event)">
+
+    <div class="header">
+        <div class="header-top">
+            <div class="title-area">
+                <h2>🌱 <span class="dept-title-span" id="schoolName" onclick="openDeptModal()">로딩중...</span> 출석부</h2>
+                <button class="memo-toggle-btn" onclick="openMemoModal()">📝 메모노트</button>
+            </div>
+            <div class="teacher-profile">
+                <img id="teacherImg" class="teacher-img" src="" onclick="document.getElementById('teacherProfileInput').click()">
+                <div id="teacherName" class="teacher-name editable" contenteditable="true">교사명</div>
+            </div>
+        </div>
+        <div class="header-controls">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="current-date-display" id="dateDisplay" onclick="openCalendar()">날짜 로딩중...</div>
+                <button class="notice-btn" onclick="openModalSafe('upcomingModal')">🔔 일정</button>
+            </div>
+            <div class="action-btns">
+                <button class="inquiry-btn" onclick="openInquiryModal()">🔍 조회</button>
+                <button class="sms-btn" onclick="openSmsModal()">💬 문자</button>
+                <button class="print-btn" onclick="window.print()">🖨️ 인쇄</button>
+                <button class="backup-btn" onclick="openBackupModal()">💾 저장</button>
+            </div>
+        </div>
+        <div class="class-info">
+            <span class="editable" id="deptName" contenteditable="true">부서</span>부 
+            <span class="editable" id="gradeNum" contenteditable="true">학년</span>학년 
+            <span class="editable" id="classNum" contenteditable="true">반</span>반
+        </div>
+    </div>
+
+    <div class="list-container">
+        <div class="summary-header">
+            <div id="attendanceSummary" class="attendance-summary">참석: 0 | 결석: 0</div>
+            <div style="display:flex; gap:8px;">
+                <button class="setting-btn" onclick="openModalSafe('customCheckModal')">⚙️ 항목</button>
+                <button class="setting-btn blue" onclick="openRoleConfigModal()">⚙️ 직분</button>
+            </div>
+        </div>
+        <div id="studentList"></div>
+    </div>
+    
+    <div style="text-align:center; padding-bottom:30px; font-size:0.8em; color:#ccc;">Piltong AI Ministry</div>
+    <button class="fab" onclick="openAddModal()">+</button>
+</div>
+
+<div id="printArea" style="display:none; padding:20px;"></div>
+
+<div class="modal" id="deptModal">
+    <div class="modal-content">
+        <div class="modal-title">🏢 출석부 선택/추가</div>
+        <div class="info-box">해당 부서의 독립된 출석부로 전환됩니다.</div>
+        <div id="deptListArea" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div>
+        <div class="input-group" style="display:flex; gap:5px;"><input type="text" id="newDeptInput" placeholder="새 부서 이름"><button class="btn btn-primary" onclick="addDept()" style="flex:0 0 60px;">추가</button></div>
+        <button class="btn btn-secondary" style="width:100%" onclick="closeModalSafe('deptModal')">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="roleConfigModal">
+    <div class="modal-content">
+        <div class="modal-title">⚙️ 직분 목록 설정</div>
+        <div class="info-box">교회 상황에 맞게 자주 사용하는 직분을 관리하세요.</div>
+        <div class="input-group" style="display:flex; gap:5px;"><input type="text" id="newRoleItemName" placeholder="새 직분 입력"><button class="btn btn-primary" onclick="addRoleItem()" style="flex:0 0 60px;">추가</button></div>
+        <div id="roleItemList" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div>
+        <button class="btn btn-secondary" style="width:100%" onclick="closeModalSafe('roleConfigModal')">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="upcomingModal">
+    <div class="modal-content">
+        <div class="modal-title">📢 다가오는 일정 및 생일</div>
+        <div class="info-box" style="color:#E65100; font-weight:bold; background:#fff3e0; border-color:#ffe0b2;">앞으로 2주 내의 중요 일정입니다.</div>
+        <div id="upcomingModalList" style="max-height: 40vh; overflow-y: auto; margin-bottom: 15px;"></div>
+        <button class="btn btn-secondary" style="width:100%" onclick="closeModalSafe('upcomingModal')">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="calendarModal">
+    <div class="modal-content">
+        <div id="calendarMonthTitle" style="font-weight:700; margin-bottom:10px; text-align:center;"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <button class="btn btn-primary" style="width:100%; margin-bottom:20px; background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9;" onclick="closeModalSafe('calendarModal')">✅ 출석부 날짜 선택완료</button>
+        
+        <div style="border-top:1px dashed #ddd; padding-top:15px;">
+            <div style="font-weight:700; margin-bottom:10px;">📅 해당 날짜에 행사 추가</div>
+            <div class="input-group" style="display:flex; gap:5px;"><input type="date" id="newEventDate"><input type="time" id="newEventTime"></div>
+            <div class="input-group"><input type="text" id="newEventTitle" placeholder="행사 내용 (예: 야외예배)"></div>
+            <button class="btn btn-primary" style="width:100%" onclick="addEvent()">일정 저장</button>
+            <div id="eventListArea" style="margin-top:10px; max-height:100px; overflow-y:auto;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="studentModal">
+    <div class="modal-content">
+        <div class="modal-title" id="studentModalTitle">회원 관리</div>
+        <input type="hidden" id="targetStudentId">
+        <div style="text-align:center; margin-bottom:15px;"><img id="modalStudentImg" src="" style="width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid #56ab2f;" onclick="triggerStudentImageUpload()"></div>
+        <button class="contact-picker-btn" onclick="pickContact()">📞 스마트폰 연락처에서 가져오기</button>
+        
+        <div class="input-group"><label>이름</label><input type="text" id="sName"></div>
+        <div class="input-group"><label>직분</label><select id="sRole"></select></div>
+        <div class="input-group"><label>전화번호</label><input type="tel" id="sPhone"></div>
+        <div class="input-group"><label>생년월일</label><input type="date" id="sBirth"></div>
+        <div class="input-group"><label>전사 (인도자 등)</label><input type="text" id="sJeonsa" placeholder="예: 홍길동 전도사"></div>
+        
+        <div class="btn-row" id="studentBtnRow"></div>
+    </div>
+</div>
+
+<div class="modal" id="inquiryModal">
+    <div class="modal-content" style="max-height:80vh; display:flex; flex-direction:column;">
+        <div class="modal-title" id="inquiryTitle">📊 종합 통계 조회</div>
+        <div id="inquiryMenu" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <button class="list-menu-btn" onclick="showRoleInquiry()">🎖 직분 통계</button>
+            <button class="list-menu-btn" onclick="showNameInquiry()">👤 회원 명단</button>
+            <button class="list-menu-btn" onclick="showDateInquiry()">📅 날짜별 출결</button>
+            <button class="list-menu-btn" onclick="showPerfectAttendance()">🏆 개근 조회</button>
+            <button class="list-menu-btn" style="grid-column: span 2;" onclick="showBirthdayInquiry()">🎂 생일자 조회</button>
+        </div>
+        <div id="inquiryResultArea" style="display:none; flex:1; overflow-y:auto; margin-top:10px;">
+            <button onclick="backToInquiryMenu()" style="border:none; background:none; color:#1976D2; font-weight:700; margin-bottom:10px; cursor:pointer;">◀ 메뉴로 돌아가기</button>
+            <div id="inquiryContent"></div>
+        </div>
+        <button class="btn btn-secondary" style="width:100%; margin-top:15px;" onclick="closeModalSafe('inquiryModal')">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="memoModal">
+    <div class="modal-content" style="height:80vh; display:flex; flex-direction:column;">
+        <div style="display:flex; gap:10px; margin-bottom:10px; background:#333; padding:5px 15px; border-radius:20px; color:white; justify-content:center;">
+            <button onclick="document.execCommand('bold',false,null)" style="background:none;border:none;color:white;cursor:pointer;font-size:16px;"><b>B</b></button>
+            <button onclick="document.execCommand('italic',false,null)" style="background:none;border:none;color:white;cursor:pointer;font-size:16px;"><i>I</i></button>
+            <button onclick="document.execCommand('underline',false,null)" style="background:none;border:none;color:white;cursor:pointer;font-size:16px;"><u>U</u></button>
+        </div>
+        <div class="modal-title" style="margin-bottom:5px;">📝 메모노트</div>
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <button class="btn btn-secondary" onclick="createNewMemo()" style="flex:1; padding:8px;">새글</button>
+            <button class="btn btn-secondary" onclick="showMemoList()" style="flex:1; padding:8px;">목록</button>
+            <button class="btn btn-primary" onclick="saveCurrentMemo()" style="flex:2; padding:8px;">현재 글 저장</button>
+        </div>
+        <div id="memoListArea" style="display:none; flex:1; overflow-y:auto;"></div>
+        <div id="memoEditor" class="memo-editor" contenteditable="true" style="flex:1; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:8px;"></div>
+        <input type="hidden" id="currentMemoId">
+        <button class="btn btn-secondary" style="width:100%; margin-top:15px;" onclick="closeMemoModal()">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="backupModal">
+    <div class="modal-content">
+        <div class="modal-title">💾 백업 / 복원</div>
+        <div class="info-box">현재 부서의 데이터를 기기에 저장하거나 불러옵니다.</div>
+        <button class="list-menu-btn" onclick="exportData()">⬇️ 백업 파일 기기에 저장하기</button>
+        <label for="backupFileInput" class="list-menu-btn" style="text-align:left; font-weight:700;">⬆️ 기존 백업 파일 기기에서 불러오기</label>
+        <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="closeModalSafe('backupModal')">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="customCheckModal">
+    <div class="modal-content">
+        <div class="modal-title">⚙️ 출석 체크 항목 설정</div>
+        <div class="input-group" style="display:flex; gap:5px;"><input type="text" id="newCheckItemName" placeholder="예: 요절암송"><button class="btn btn-primary" onclick="addCustomItem()" style="flex:0 0 60px;">추가</button></div>
+        <div id="customItemList" style="margin-bottom:15px; max-height:150px; overflow-y:auto;"></div>
+        <button class="btn btn-secondary" style="width:100%" onclick="closeModalSafe('customCheckModal')">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="smsModal">
+    <div class="modal-content">
+        <div class="modal-title">💬 단체 문자 발송</div>
+        <button class="list-menu-btn" onclick="sendSms('all')" style="border-left: 4px solid #1976D2;">👥 명단 전체 학생에게 보내기</button>
+        <button class="list-menu-btn" onclick="sendSms('present')" style="border-left: 4px solid #2e7d32;">✅ 오늘 출석자에게 보내기</button>
+        <button class="list-menu-btn" onclick="sendSms('absent')" style="border-left: 4px solid #c62828;">❌ 오늘 결석자에게 보내기</button>
+        <button class="btn btn-secondary" style="width:100%; margin-top:15px;" onclick="closeModalSafe('smsModal')">닫기</button>
+    </div>
+</div>
+
+<script>
+    // ----------------------------------------------------
+    // 1. 공통 무적 방어막 및 전역 변수
+    // ----------------------------------------------------
+    const defaultProfileSVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
+    
+    let currentDept = '주일학교';
+    let deptList = ['주일학교'];
+    let roleList = ["목사", "부목사", "전도사", "장로", "권사", "집사", "교사", "청년", "학생"];
+    let students = [], attendance = {}, events = [], customItems = [], customData = {}, savedMemos = [];
+    let currentSelectedDate = '', tempStudentImageData = '', calendarViewDate = new Date();
+
+    function k(base) { return base + '_' + currentDept; }
+
+    function safeSet(key, val) {
+        try { localStorage.setItem(key, val); } catch(e) { console.error("Storage Error"); }
+    }
+
+    function safeGet(key) {
+        try { return localStorage.getItem(key); } catch(e) { return null; }
+    }
+
+    function safeRemove(key) {
+        try { localStorage.removeItem(key); } catch(e) {}
+    }
+
+    function getSafeJSON(key, def) {
+        try { 
+            const d = safeGet(key); 
+            if(d && d !== 'undefined' && d !== 'null') {
+                const parsed = JSON.parse(d);
+                if(Array.isArray(def) && !Array.isArray(parsed)) return def; // Array 방어막
+                return parsed;
+            }
+            return def;
+        } catch(e) { return def; }
+    }
+
+    // ----------------------------------------------------
+    // 2. 앱 기동 (DOM 로드 후 100% 안전하게 실행)
+    // ----------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+        try {
+            // 마이그레이션 (구버전 데이터 -> 부서 체계 이관)
+            if (!safeGet('ss_multidept_migrated')) {
+                const map = {'ss_students_v4':'students_주일학교', 'ss_attendance_v4':'attendance_주일학교', 'ss_events_v1':'events_주일학교', 'ss_memo_list':'memo_list_주일학교', 'ss_classInfo':'classInfo_주일학교', 'ss_profileImg':'profileImg_주일학교'};
+                for (let old in map) { let v = safeGet(old); if (v) safeSet(map[old], v); }
+                safeSet('ss_dept_list', JSON.stringify(['주일학교']));
+                safeSet('ss_current_dept', '주일학교');
+                safeSet('ss_multidept_migrated', 'true');
+            }
+
+            // 전역 변수 및 데이터 로딩
+            currentDept = safeGet('ss_current_dept') || '주일학교';
+            deptList = getSafeJSON('ss_dept_list', ['주일학교']);
+            
+            loadDeptData();
+            
+            // 오늘 날짜 세팅
+            const today = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+            currentSelectedDate = today.toISOString().split('T')[0];
+            setMainDate(currentSelectedDate);
+            
+            // 일정 브리핑 팝업
+            renderUpcoming();
+            setTimeout(() => { openModalSafe('upcomingModal'); }, 400);
+
+        } catch(e) { console.error("INIT ERROR", e); }
+    });
+
+    function loadDeptData() {
+        students = getSafeJSON(k('students'), []);
+        attendance = getSafeJSON(k('attendance'), {});
+        events = getSafeJSON(k('events'), []);
+        customItems = getSafeJSON(k('customItems'), []);
+        customData = getSafeJSON(k('customData'), {});
+        savedMemos = getSafeJSON(k('memo_list'), []);
+        
+        // 🔥 요청하신 순서(목사->부목사->전도사->장로->권사->집사->교사->청년->학생)로 초기값 구성
+        roleList = getSafeJSON(k('role_list'), ["목사", "부목사", "전도사", "장로", "권사", "집사", "교사", "청년", "학생"]);
+        
+        document.getElementById('schoolName').innerText = currentDept;
+        
+        const info = getSafeJSON(k('classInfo'), {});
+        document.getElementById('deptName').innerText = info.dept || '';
+        document.getElementById('gradeNum').innerText = info.grade || '';
+        document.getElementById('classNum').innerText = info.cls || '';
+        document.getElementById('teacherName').innerText = info.teacher || '';
+        document.getElementById('teacherImg').src = safeGet(k('profileImg')) || defaultProfileSVG;
+        
+        // 타이틀 정보 저장 이벤트 달기
+        document.querySelectorAll('.editable').forEach(el => {
+            el.addEventListener('blur', () => {
+                const data = {
+                    dept: document.getElementById('deptName').innerText,
+                    grade: document.getElementById('gradeNum').innerText,
+                    cls: document.getElementById('classNum').innerText,
+                    teacher: document.getElementById('teacherName').innerText
+                };
+                safeSet(k('classInfo'), JSON.stringify(data));
+            });
+        });
+        renderList();
+    }
+
+    // ----------------------------------------------------
+    // 3. 모달 제어 (스마트폰 뒤로가기 완벽 지원)
+    // ----------------------------------------------------
+    function openModalSafe(id) { 
+        const m = document.getElementById(id); 
+        if(m) { m.style.display = 'flex'; window.history.pushState({id}, null, '#'+id); } 
+    }
+    
+    function closeModalSafe(id) { 
+        const m = document.getElementById(id); 
+        if(m) { m.style.display = 'none'; if(window.location.hash === '#'+id) window.history.back(); } 
+    }
+    
+    window.addEventListener('popstate', () => { 
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
+        try {
+            const ed = document.getElementById('memoEditor');
+            if (ed && ed.innerHTML.trim() !== '') safeSet(k('last_active_memo'), ed.innerHTML);
+        } catch(e) {}
+    });
+
+    // ----------------------------------------------------
+    // 4. 날짜 캘린더 메인 제어
+    // ----------------------------------------------------
+    function setMainDate(d) {
+        currentSelectedDate = d;
+        const week = ['일','월','화','수','목','금','토'];
+        document.getElementById('dateDisplay').innerText = d + ' (' + week[new Date(d).getDay()] + ')';
+        renderList();
+    }
+
+    function openCalendar() {
+        calendarViewDate = new Date(currentSelectedDate);
+        document.getElementById('newEventDate').value = currentSelectedDate;
+        openModalSafe('calendarModal');
+        renderCalendar();
+        renderEventList();
+    }
+
+    function changeCalendarMonth(offset) {
+        calendarViewDate.setMonth(calendarViewDate.getMonth() + offset);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('
